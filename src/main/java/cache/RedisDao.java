@@ -1,5 +1,6 @@
 package cache;
 
+import com.google.gson.Gson;
 import redis.clients.jedis.Jedis;
 import utils.RedisPoolManager;
 import utils.SerializeUtil;
@@ -9,14 +10,17 @@ import utils.SerializeUtil;
  */
 public class RedisDao {
 
+    Gson gson = new Gson();
 
-    public Object getObject(int id){
+    public <T>T getObject(int id,Class<T> c){
         //获得jedis实例
          Jedis jedis = RedisPoolManager.createInstance();
         try {
-            byte[] object = jedis.get((id + "").getBytes());
-            if (object!=null)
-            return SerializeUtil.unserialize(object);
+            String object = jedis.get(id+"");
+
+            if (object!=null){
+                return gson.fromJson(object,c);
+            }
         }finally {
             jedis.close();
         }
@@ -30,7 +34,7 @@ public class RedisDao {
         Jedis jedis = RedisPoolManager.createInstance();
         try {
             int timeout = 60 * 60;
-            String result = jedis.setex((id + "").getBytes(), timeout, SerializeUtil.serialize(object));
+            String result = jedis.setex(id+"", timeout, gson.toJson(object));
             return result;
         }finally {
             jedis.close();
